@@ -827,6 +827,7 @@ func handleCharData(charData xml.CharData, ctx *context) error {
 		}
 
 		node := NewText(string(charData))
+		node.SetCDATA(true)
 		ctx.parent.InsertEndChild(node)
 	}
 
