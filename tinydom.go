@@ -3,12 +3,12 @@ package tinydom
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/xml"
 	"errors"
 	"io"
-	"unicode/utf8"
-	"container/list"
 	"os"
+	"unicode/utf8"
 )
 
 // XMLAttribute 是一个元素的属性的接口.
@@ -827,7 +827,6 @@ func handleCharData(charData xml.CharData, ctx *context) error {
 		}
 
 		node := NewText(string(charData))
-		node.SetCDATA(true)
 		ctx.parent.InsertEndChild(node)
 	}
 
@@ -845,10 +844,9 @@ func LoadDocument(rd io.Reader) (XMLDocument, error) {
 
 	// 创建一个decoder
 	decoder := xml.NewDecoder(rd)
-	var token xml.Token
-	var err error
+	token, err := decoder.Token()
 
-	for token, err = decoder.Token(); nil == err; token, err = decoder.Token() {
+	for ; err == nil; token, err = decoder.Token() {
 		switch token.(type) {
 		case xml.StartElement:
 			err := handleStartElement(token.(xml.StartElement), ctx)
@@ -873,7 +871,7 @@ func LoadDocument(rd io.Reader) (XMLDocument, error) {
 		}
 	}
 
-	if (nil == err) || (io.EOF == err) {
+	if err == io.EOF {
 		// 不能是空文档
 		if nil == ctx.doc.FirstChildElement("") {
 			return nil, errors.New("XML document missing the root element")
@@ -1326,7 +1324,7 @@ func EscapeAttribute(w io.Writer, s []byte) error {
 			}
 			continue
 		}
-		if _, err := w.Write(s[last: i-width]); err != nil {
+		if _, err := w.Write(s[last : i-width]); err != nil {
 			return err
 		}
 		if _, err := w.Write(esc); err != nil {
@@ -1359,7 +1357,7 @@ func EscapeText(w io.Writer, s []byte) error {
 			}
 			continue
 		}
-		if _, err := w.Write(s[last: i-width]); err != nil {
+		if _, err := w.Write(s[last : i-width]); err != nil {
 			return err
 		}
 		if _, err := w.Write(esc); err != nil {
